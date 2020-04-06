@@ -74,18 +74,6 @@ class Welcome extends Component<WelcomeProps, WelcomeState> {
                     }}>About</Button>
                 </WindowButtons>
             </>)
-        } else if(this.props.character.public.alliance_id != 99005338) { // basic check, easy to get around but whatever, they get an ingame browser woopteedoo
-            return (<>
-                <Panel>
-                    <h1>Unauthorized!</h1>
-                    <h3>Sorry, but {this.props.character.public.name} does not appear to be a member of Pandemic Horde.</h3>
-                </Panel>
-                <WindowButtons>
-                    <Button onClick={() => {
-                        ipcRenderer.send("openWindow", "about");
-                    }}>About</Button>
-                </WindowButtons>
-            </>)
         } else {
             return (
                 <>
@@ -96,16 +84,10 @@ class Welcome extends Component<WelcomeProps, WelcomeState> {
                             <br />
                             <div style={{textAlign: 'right', marginLeft: '150px'}}>{this.props.auth === undefined ? 'You are currently not ESI authorized. You will be unable to use some tools.' : 'ESI successfully authorized'}</div>
                             {this.props.apiState ? <div style={{textAlign: 'right', marginLeft: '150px'}}>{this.apiStateText()}</div> : null}
-                            {this.state.newVersion ? <div className={"new-version-alert"} onClick={() => shell.openExternal("https://www.pandemic-horde.org/forum/index.php?threads/evevision-the-eve-ui-you-always-wanted.2540/")}><strong>Version {this.state.newVersion} available!</strong></div> : null}
+                            {this.state.newVersion ? <div className={"new-version-alert"} onClick={() => ipcRenderer.send("openWindow", "externalsite", "https://github.com/evevision/evevision/releases")}><strong>Version {this.state.newVersion} available!</strong></div> : null}
                         </Typography>
                     </Panel>
                     <WindowButtons>
-                        <Button onClick={() => {
-                            ipcRenderer.send("openWindow", "externalsite", "https://www.pandemic-horde.org/");
-                        }}>Square</Button>
-                        <Button onClick={() => {
-                            ipcRenderer.send("openWindow", "beanwatch");
-                        }}>Beanwatch</Button>
                         <Button onClick={() => {
                             ipcRenderer.send("openWindow", "tools");
                         }}>Tools</Button>
@@ -115,6 +97,9 @@ class Welcome extends Component<WelcomeProps, WelcomeState> {
                         <Button onClick={() => {
                             ipcRenderer.send("openWindow", "auth");
                         }}>ESI Authorization</Button>
+                        <Button onClick={() => {
+                            ipcRenderer.send("openWindow", "externalsite", "https://discord.gg/BBBJRkM");
+                        }}>Help</Button>
                         <Button onClick={() => {
                             ipcRenderer.send("openWindow", "about");
                         }}>About</Button>
