@@ -1,13 +1,13 @@
 import React, {Component} from 'react';
 import {Panel, Typography, WindowButtons} from '../ui/Layout';
 import {Button} from '../ui/Input';
-import {ipcRenderer, shell} from "electron"
+import {ipcRenderer} from "electron"
 import {updateCharacterPublicInfo} from "../store/characters/actions";
 import {AppState} from "../store/rootReducer";
 import {connect} from "react-redux";
 import {ApiConnectionStatus, ApiState, CharacterEsiAuth, CharacterInfo} from "../store/characters/types";
 import superagent from "superagent";
-const { version } = require('../package.json');
+import {version} from '../package.json';
 
 interface WelcomeProps {
     updateCharacterPublicInfo: typeof updateCharacterPublicInfo;
@@ -34,7 +34,6 @@ class Welcome extends Component<WelcomeProps, WelcomeState> {
     checkForLatestVersion = () => {
         superagent.get("http://releases.eve.vision.s3-website.us-east-2.amazonaws.com/").then(res => {
             if(res.text !== version) {
-                console.log("Latest EveVision version differs", res.text)
                 this.setState({newVersion: res.text})
             }
         }).catch((err) => {
@@ -46,7 +45,7 @@ class Welcome extends Component<WelcomeProps, WelcomeState> {
         // go ahead and update this character's data
         this.props.updateCharacterPublicInfo(this.props.characterId);
         document.title = "EveVision " + version
-        this.versionCheckTimer = setInterval(this.checkForLatestVersion, 10*60*1000) // every 10 minutes
+        this.versionCheckTimer = setInterval(this.checkForLatestVersion, 15*60*1000) // every 15 minutes
         this.checkForLatestVersion();
     }
 
@@ -62,6 +61,7 @@ class Welcome extends Component<WelcomeProps, WelcomeState> {
             case ApiConnectionStatus.CONNECTED: return "Connected to api.eve.vision"
         }
     }
+
     render() {
         if(this.props.character === undefined || this.props.character.public === undefined) {
             return (<>
@@ -77,12 +77,13 @@ class Welcome extends Component<WelcomeProps, WelcomeState> {
         } else {
             return (
                 <>
-                    <div className={"eve-welcome-bean"}></div>
+                    {this.props.character.public.alliance_id == 99005338 && this.props.character.public.corporation_id != 98148549 ? <div className={"eve-welcome-bean"}></div> : ""}
+                    {this.props.character.public.corporation_id == 98148549 ? <div className={"eve-welcome-bean-capf"}></div> : ""}
                     <Panel>
                         <Typography>
                             <h2 style={{textAlign: 'right', marginLeft: '150px'}}>Welcome to EveVision, {this.props.character.public.name}.</h2>
                             <br />
-                            <div style={{textAlign: 'right', marginLeft: '150px'}}>{this.props.auth === undefined ? 'You are currently not ESI authorized. You will be unable to use some tools.' : 'ESI successfully authorized'}</div>
+                            <div style={{textAlign: 'right', marginLeft: '150px'}}>ESI authorization not required.</div>
                             {this.props.apiState ? <div style={{textAlign: 'right', marginLeft: '150px'}}>{this.apiStateText()}</div> : null}
                             {this.state.newVersion ? <div className={"new-version-alert"} onClick={() => ipcRenderer.send("openWindow", "externalsite", "https://github.com/evevision/evevision/releases")}><strong>Version {this.state.newVersion} available!</strong></div> : null}
                         </Typography>
@@ -100,6 +101,9 @@ class Welcome extends Component<WelcomeProps, WelcomeState> {
                         <Button onClick={() => {
                             ipcRenderer.send("openWindow", "externalsite", "https://discord.gg/BBBJRkM");
                         }}>Help</Button>
+                        {this.props.character.public.corporation_id != 98148549 ? <Button onClick={() => {
+                            ipcRenderer.send("openWindow", "ricardo");
+                        }}>Morale Boost</Button> : ""}
                         <Button onClick={() => {
                             ipcRenderer.send("openWindow", "about");
                         }}>About</Button>

@@ -13,12 +13,13 @@ ipcMain.on("clearPositionStore", () => positionStore.clear())
 const defaultSizes = {
     "main":         {width: 600, height: 345},
     "welcome":      {width: 410, height: 170},
-    "about":        {width: 300, height: 480},
+    "about":        {width: 600, height: 500},
     "beanwatch":    {width: 400, height: 150},
     "settings":     {width: 400, height: 185},
     "tools":        {width: 375, height: 400},
     "auth":         {width: 400, height: 500},
-    "externalsite": {width: 600, height: 500}
+    "externalsite": {width: 600, height: 500},
+    "ricardo":      {width: 1250, height: 750}
 }
 
 const dragBorder = 5;
@@ -89,7 +90,7 @@ export default class EveWindow {
         this.windowName = windowName
         this.itemId = itemId
         this.isUserClosable = isUserClosable
-        this.isResizable = this.windowName !== "welcome";
+        this.isResizable = this.windowName !== "welcome" && this.windowName !== "about";
 
         const uniqueArgs = [this.characterId.toString(), this.windowName, Buffer.from(this.itemId).toString("base64")]
         this.windowHash = Buffer.from(uniqueArgs.toString()).toString("base64")
@@ -201,6 +202,7 @@ export default class EveWindow {
 
     restore() {
         if(!this.minimized || !this.preMinimizeRect) { return; }
+        log.info("Restoring window", this.windowId, this.windowName)
         this.setPosition(this.preMinimizeRect.pos.x, this.preMinimizeRect.pos.y);
         this.minimized = false
         this.preMinimizeRect = undefined
@@ -209,6 +211,7 @@ export default class EveWindow {
 
     minimize(): boolean {
         if(this.minimized) { return false; }
+        log.info("Minimizing window", this.windowId, this.windowName)
         // TODO: add hiding to C++?
         const bounds = this.electronWindow.getBounds()
         this.preMinimizeRect = {size: {width: bounds.width, height: bounds.height}, pos: {x: bounds.x, y: bounds.y}}
@@ -280,7 +283,7 @@ export default class EveWindow {
         if(event.sender.id !== this.webContentsId) {return;}
 
         if(this.childWindow !== undefined) {
-            console.error("Attempted to create child window when there already is one!");
+            log.error("Attempted to create child window when there already is one!");
             return;
         }
 
@@ -289,7 +292,7 @@ export default class EveWindow {
     }
 
     private handleChildWindowTitle = (title: string) => {
-        if(this.windowName == "externalsite") {
+        if(!this.closed && this.windowName == "externalsite") {
             this.electronWindow.webContents.send("setTitle", title);
         }
     }
@@ -534,7 +537,7 @@ export default class EveWindow {
 
         let bounds = {width: 300, height: 300, x: 0, y: 0};
 
-        if(!resolution) { console.log("no resolution?"); return bounds; }
+        if(!resolution) { log.warn("no resolution in calculatewindowrect", this.windowId, this.windowName); return bounds; }
 
         if (this.windowName in defaultSizes) {
             const defaultSize = defaultSizes[this.windowName];
@@ -543,7 +546,7 @@ export default class EveWindow {
 
         if(positionStore.has(this.windowHash)) {
             const position = positionStore.get(this.windowHash) as StoredWindowPosition
-            if(this.windowName !== "welcome") {
+            if(this.windowName !== "welcome" && this.windowName !== "about") {
                 // don't read size for the welcome window. Technically it should never change anyways,
                 // but due to a bug with DPI some ended up saving a huge welcome screen that can't be reset without
                 // deleting the appdata files.
@@ -565,7 +568,7 @@ export default class EveWindow {
 
                 bounds.x = Math.max(Math.min(Math.floor((position.xRatio * (resolution.width / 2)) + (resolution.width / 2) - (bounds.width / 2)), maxX), 0)
             } else {
-                console.error("No X coordinate!", position)
+                log.warn("no X coordinate in position store", position);
                 bounds.x = 0
             }
 
@@ -576,7 +579,7 @@ export default class EveWindow {
             } else if(position.yRatio != undefined) {
                 bounds.y = Math.max(Math.min(Math.floor((position.yRatio * (resolution.height / 2)) + (resolution.height / 2) - (bounds.height / 2)), maxY), 0);
             } else {
-                console.error("No Y coordinate!", position)
+                log.warn("no Y coordinate in position store", position);
             }
 
         } else {
